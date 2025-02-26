@@ -15,13 +15,14 @@ app.get("/api/stock/:symbol", async (req, res) => {
 
     // Fetch stock data from Yahoo Finance
     const stockData = await yahooFinance.quoteSummary(ticker, {
-      modules: ["summaryDetail", "defaultKeyStatistics"],
+      modules: ["summaryProfile", "summaryDetail", "defaultKeyStatistics"],
     });
 
     // Log API response for debugging
     console.log("Stock Data Response:", stockData);
 
     res.json({
+      companyName: stockData.summaryProfile.longName || symbol, // Company Name
       symbol: ticker,
       price: stockData.summaryDetail.previousClose || "N/A", // Current Price
       pe_ttm: stockData.defaultKeyStatistics.trailingPE || stockData.defaultKeyStatistics.forwardPE || "N/A", // PE Ratio (TTM) or Forward PE
