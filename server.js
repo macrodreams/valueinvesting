@@ -11,21 +11,22 @@ app.use(cors()); // Enable CORS
 app.get("/api/stock/:symbol", async (req, res) => {
   try {
     let { symbol } = req.params;
-
-    // Append `.NS` for NSE stocks (assuming Indian stocks by default)
-    const ticker = `${symbol}.NS`;
+    const ticker = `${symbol}.NS`; // Append .NS for NSE stocks
 
     // Fetch stock data from Yahoo Finance
     const stockData = await yahooFinance.quoteSummary(ticker, {
       modules: ["summaryDetail", "defaultKeyStatistics"],
     });
 
+    // Log API response for debugging
+    console.log("Stock Data Response:", stockData);
+
     res.json({
       symbol: ticker,
       price: stockData.summaryDetail.previousClose || "N/A", // Current Price
-      pe_ttm: stockData.defaultKeyStatistics.trailingPE || "N/A", // PE Ratio (TTM)
+      pe_ttm: stockData.defaultKeyStatistics.trailingPE || stockData.defaultKeyStatistics.forwardPE || "N/A", // PE Ratio (TTM) or Forward PE
       pb: stockData.defaultKeyStatistics.priceToBook || "N/A", // PB Ratio
-      intrinsicValue: "N/A", // Placeholder for Intrinsic Value calculation
+      intrinsicValue: "N/A", // Placeholder for Intrinsic Value
     });
   } catch (error) {
     console.error("Error fetching stock data:", error);
