@@ -1,28 +1,44 @@
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
+import express from "express";
+import axios from "axios";
+import dotenv from "dotenv";
+
+dotenv.config(); // Load API keys from .env
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 5000;
 
-const API_KEY = "cuvl9bpr01qvpm3ragb0cuvl9bpr01qvpm3ragbg"; // Replace with actual key
+app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({ message: "Server is running!" });
-});
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY; // Store API key in .env
 
 app.get("/api/stock/:symbol", async (req, res) => {
-  const { symbol } = req.params;
-  const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`;
-
   try {
-    const response = await axios.get(url);
-    res.json(response.data);
+    const { symbol } = req.params;
+
+    // Fetch stock data from Finnhub
+    const response = await axios.get(
+      `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+    );
+
+    const fundamentals = await axios.get(
+      `https://finnhub.io/api/v1/stock/metric?symbol=${symbol}&metric=all&token=${FINNHUB_API_KEY}`
+    );
+
+    res.json({
+      symbol: symbol,
+      price: response.data.c, // Current Price
+      pe: fundamentals.data.metric.peExclExtraTTM || "N/A", // PE Ratio
+      pb: fundamentals.data.metric.pbExclExtraTTM || "N/A", // PB Ratio
+      intrinsicValue: fundamentals.data.metric.fcfYieldTTM
+        ? (1 / fundamentals.data.metric.fcfYieldTTM).toFixed(2) // Intrinsic Value
+        : "N/A",
+    });
   } catch (error) {
-    console.error("Error fetching stock data:", error.message);
+    console.error("Error fetching stock data:", error);
     res.status(500).json({ error: "Failed to fetch stock data" });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
