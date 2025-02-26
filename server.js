@@ -10,15 +10,18 @@ app.use(cors()); // Enable CORS
 
 app.get("/api/stock/:symbol", async (req, res) => {
   try {
-    const { symbol } = req.params;
+    let { symbol } = req.params;
+    
+    // Append `.NS` for NSE stocks (assuming Indian stocks by default)
+    const ticker = `${symbol}.NS`;
 
     // Fetch stock data from Yahoo Finance
-    const stockData = await yahooFinance.quoteSummary(symbol, {
+    const stockData = await yahooFinance.quoteSummary(ticker, {
       modules: ["summaryDetail", "defaultKeyStatistics"],
     });
 
     res.json({
-      symbol: symbol,
+      symbol: ticker,
       price: stockData.summaryDetail.previousClose || "N/A", // Current Price
       pe: stockData.defaultKeyStatistics.trailingPE || "N/A", // PE Ratio
       pb: stockData.defaultKeyStatistics.priceToBook || "N/A", // PB Ratio
