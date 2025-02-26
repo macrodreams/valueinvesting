@@ -15,18 +15,23 @@ app.get("/api/stock/:symbol", async (req, res) => {
 
     // Fetch stock data from Yahoo Finance
     const stockData = await yahooFinance.quoteSummary(ticker, {
-      modules: ["summaryProfile", "summaryDetail", "defaultKeyStatistics"],
+      modules: ["price", "summaryDetail", "defaultKeyStatistics"],
     });
 
-    // Log API response for debugging
-    console.log("Stock Data Response:", stockData);
+    console.log("Stock Data Response:", stockData); // Debugging
 
     res.json({
-      companyName: stockData.summaryProfile.longName || symbol, // Company Name
+      companyName:
+        stockData.price?.longName || // First preference
+        stockData.price?.shortName || // Fallback option
+        symbol, // Default to symbol if name is missing
       symbol: ticker,
-      price: stockData.summaryDetail.previousClose || "N/A", // Current Price
-      pe_ttm: stockData.defaultKeyStatistics.trailingPE || stockData.defaultKeyStatistics.forwardPE || "N/A", // PE Ratio (TTM) or Forward PE
-      pb: stockData.defaultKeyStatistics.priceToBook || "N/A", // PB Ratio
+      price: stockData.summaryDetail?.previousClose || "N/A", // Current Price
+      pe_ttm:
+        stockData.defaultKeyStatistics?.trailingPE ||
+        stockData.defaultKeyStatistics?.forwardPE ||
+        "N/A", // PE Ratio (TTM) or Forward PE
+      pb: stockData.defaultKeyStatistics?.priceToBook || "N/A", // PB Ratio
       intrinsicValue: "N/A", // Placeholder for Intrinsic Value
     });
   } catch (error) {
