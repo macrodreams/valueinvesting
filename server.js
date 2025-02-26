@@ -5,7 +5,11 @@ const axios = require("axios");
 const app = express();
 app.use(cors());
 
-const API_KEY = "cuvl9bpr01qvpm3ragb0cuvl9bpr01qvpm3ragbg"; // Replace with your actual Finnhub API Key
+const API_KEY = "cuvl9bpr01qvpm3ragb0cuvl9bpr01qvpm3ragbg"; // Replace with actual key
+
+app.get("/", (req, res) => {
+  res.json({ message: "Server is running!" });
+});
 
 app.get("/api/stock/:symbol", async (req, res) => {
   const { symbol } = req.params;
