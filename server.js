@@ -11,28 +11,32 @@ app.use(cors()); // Enable CORS
 app.get("/api/stock/:symbol", async (req, res) => {
   try {
     let { symbol } = req.params;
-    const ticker = `${symbol}.NS`; // Append .NS for NSE stocks
+    symbol = symbol.toUpperCase() + ".NS"; // Append .NS for NSE stocks
 
     // Fetch stock data from Yahoo Finance
-    const stockData = await yahooFinance.quoteSummary(ticker, {
-      modules: ["price", "summaryDetail", "defaultKeyStatistics"],
+    const stockData = await yahooFinance.quoteSummary(symbol, {
+      modules: ["summaryDetail", "defaultKeyStatistics", "financialData"],
     });
 
-    console.log("Stock Data Response:", stockData); // Debugging
+    const price = stockData.summaryDetail.previousClose || "N/A";
+    const peRatio = stockData.defaultKeyStatistics.trailingPE || "N/A";
+    const pbRatio = stockData.defaultKeyStatistics.priceToBook || "N/A";
+    const freeCashFlow = stockData.financialData.freeCashflow || null;
+    const earningsGrowth = stockData.financialData.earningsGrowth || 0;
+
+    let intrinsicValue = "N/A";
+    if (freeCashFlow && earningsGrowth > 0) {
+      // Simple DCF Model: IV = (FCF * (1 + Growth Rate)) / Discount Rate
+      const discountRate = 0.10; // 10% discount rate (adjustable)
+      intrinsicValue = ((freeCashFlow * (1 + earningsGrowth)) / discountRate).toFixed(2);
+    }
 
     res.json({
-      companyName:
-        stockData.price?.longName || // First preference
-        stockData.price?.shortName || // Fallback option
-        symbol, // Default to symbol if name is missing
-      symbol: ticker,
-      price: stockData.summaryDetail?.previousClose || "N/A", // Current Price
-      pe_ttm:
-        stockData.defaultKeyStatistics?.trailingPE ||
-        stockData.defaultKeyStatistics?.forwardPE ||
-        "N/A", // PE Ratio (TTM) or Forward PE
-      pb: stockData.defaultKeyStatistics?.priceToBook || "N/A", // PB Ratio
-      intrinsicValue: "N/A", // Placeholder for Intrinsic Value
+      symbol: symbol.replace(".NS", ""),
+      price: `₹${price}`,
+      pe: peRatio,
+      pb: pbRatio,
+      intrinsicValue: intrinsicValue !== "N/A" ? `₹${intrinsicValue}` : "N/A",
     });
   } catch (error) {
     console.error("Error fetching stock data:", error);
