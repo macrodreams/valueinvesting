@@ -32,37 +32,6 @@ app.get("/api/stock/:symbol", async (req, res) => {
   }
 });
 
-// Fetch historical stock price data
-app.get("/api/stock/history/:symbol", async (req, res) => {
-  try {
-    let { symbol } = req.params;
-    symbol = symbol.toUpperCase() + ".NS"; // Append .NS for NSE stocks
-
-    // ✅ Ensure valid `period1` (30 days ago) and `period2` (now)
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const period1 = Math.floor(oneMonthAgo.getTime() / 1000); // Unix timestamp
-    const period2 = Math.floor(Date.now() / 1000); // Current time
-
-    // ✅ Fetch historical data
-    const historicalData = await yahooFinance.chart(symbol, {
-      period1,
-      period2,
-      interval: "1d", // Daily data
-    });
-
-    // ✅ Improved Error Handling
-    if (!historicalData?.chart?.result || historicalData.chart.result.length === 0) {
-      throw new Error("No historical data available for this stock.");
-    }
-
-    res.json(historicalData.chart.result[0]);
-  } catch (error) {
-    console.error("Error fetching historical stock data:", error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
