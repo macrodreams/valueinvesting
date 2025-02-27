@@ -46,24 +46,20 @@ app.get("/api/stock/history/:symbol", async (req, res) => {
     let { symbol } = req.params;
     symbol = symbol.toUpperCase() + ".NS"; // Append .NS for NSE stocks
 
-    // Get timestamps for the last 30 days
-    const today = new Date();
-    const lastMonth = new Date();
-    lastMonth.setMonth(today.getMonth() - 1); // Go back one month
-
-    const period1 = Math.floor(lastMonth.getTime() / 1000); // Convert to UNIX timestamp
-    const period2 = Math.floor(today.getTime() / 1000); // Convert to UNIX timestamp
-
     // Fetch historical data
     const historicalData = await yahooFinance.chart(symbol, {
-      period1, // Start date (UNIX timestamp)
-      period2, // End date (UNIX timestamp)
+      period1: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+      period2: new Date().toISOString(), // Current date
       interval: "1d", // Daily data
     });
 
-    res.json(historicalData);
+    if (!historicalData || !historicalData.result || historicalData.result.length === 0) {
+      throw new Error("No historical data available");
+    }
+
+    res.json(historicalData.result[0]); // Send the first result
   } catch (error) {
-    console.error("Error fetching historical stock data:", error);
+    console.error("Error fetching historical stock data:", error.message);
     res.status(500).json({ error: "Failed to fetch historical stock data" });
   }
 });
