@@ -22,8 +22,8 @@ app.get("/api/stock/:symbol", async (req, res) => {
 
     res.json({
       companyName:
-        stockData.price?.longName || // First preference
-        stockData.price?.shortName || // Fallback option
+        stockData.price?.longName ||
+        stockData.price?.shortName ||
         symbol, // Default to symbol if name is missing
       symbol: ticker,
       price: stockData.summaryDetail?.previousClose || "N/A", // Current Price
@@ -40,16 +40,24 @@ app.get("/api/stock/:symbol", async (req, res) => {
   }
 });
 
-// historical stock price data
-
+// Fetch historical stock price data
 app.get("/api/stock/history/:symbol", async (req, res) => {
   try {
     let { symbol } = req.params;
     symbol = symbol.toUpperCase() + ".NS"; // Append .NS for NSE stocks
 
-    // Fetch historical data (last 30 days)
+    // Get timestamps for the last 30 days
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setMonth(today.getMonth() - 1); // Go back one month
+
+    const period1 = Math.floor(lastMonth.getTime() / 1000); // Convert to UNIX timestamp
+    const period2 = Math.floor(today.getTime() / 1000); // Convert to UNIX timestamp
+
+    // Fetch historical data
     const historicalData = await yahooFinance.chart(symbol, {
-      period1: "1mo", // Last 1 month
+      period1, // Start date (UNIX timestamp)
+      period2, // End date (UNIX timestamp)
       interval: "1d", // Daily data
     });
 
