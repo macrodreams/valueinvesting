@@ -24,7 +24,7 @@ app.get("/api/stock/:symbol", async (req, res) => {
       price: stockData.summaryDetail?.previousClose || "N/A",
       pe_ttm: stockData.defaultKeyStatistics?.trailingPE || "N/A",
       pb: stockData.defaultKeyStatistics?.priceToBook || "N/A",
-      intrinsicValue: "N/A", // Placeholder
+      intrinsicValue: "N/A",
     });
   } catch (error) {
     console.error("Error fetching stock data:", error);
@@ -38,27 +38,28 @@ app.get("/api/stock/history/:symbol", async (req, res) => {
     let { symbol } = req.params;
     symbol = symbol.toUpperCase() + ".NS"; // Append .NS for NSE stocks
 
-    // ✅ Fix: Calculate a valid period1 timestamp (1 month ago)
+    // ✅ Ensure valid `period1` (30 days ago) and `period2` (now)
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const period1 = Math.floor(oneMonthAgo.getTime() / 1000); // Convert to Unix timestamp
+    const period1 = Math.floor(oneMonthAgo.getTime() / 1000); // Unix timestamp
     const period2 = Math.floor(Date.now() / 1000); // Current time
 
-    // Fetch historical data
+    // ✅ Fetch historical data
     const historicalData = await yahooFinance.chart(symbol, {
-      period1: period1,
-      period2: period2,
+      period1,
+      period2,
       interval: "1d", // Daily data
     });
 
-    if (!historicalData || !historicalData.chart || !historicalData.chart.result) {
-      throw new Error("No historical data available");
+    // ✅ Improved Error Handling
+    if (!historicalData?.chart?.result || historicalData.chart.result.length === 0) {
+      throw new Error("No historical data available for this stock.");
     }
 
     res.json(historicalData.chart.result[0]);
   } catch (error) {
-    console.error("Error fetching historical stock data:", error);
-    res.status(500).json({ error: "Failed to fetch historical stock data" });
+    console.error("Error fetching historical stock data:", error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
