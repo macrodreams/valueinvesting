@@ -1,14 +1,5 @@
 [
   {
-    "stockName": "Reliance Industries",
-    "currentStockPrice": 2800,
-    "intrinsicValue": 3000,
-    "currentPE": 25,
-    "tenYearPE": 20,
-    "currentPB": 3.5,
-    "tenYearPB": 3.0
-  },
-  {
     "stockName": "TCS",
     "currentStockPrice": 3500,
     "intrinsicValue": 3800,
