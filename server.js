@@ -14,8 +14,9 @@ app.get("/api/stock/:symbol", async (req, res) => {
     let { symbol } = req.params;
     const ticker = `${symbol}.NS`; // Ensure proper format for NSE stocks
 
-    // Get the current date in YYYY-MM-DD format
-    const today = new Date().toISOString().split("T")[0];
+    // Get UNIX timestamps for 10 years ago and today
+    const period1 = new Date("2013-01-01").getTime() / 1000; // Convert to UNIX timestamp
+    const period2 = Math.floor(Date.now() / 1000); // Current date as UNIX timestamp
 
     // Fetch all required data
     const [quote, quoteSummary, historical] = await Promise.all([
@@ -24,9 +25,9 @@ app.get("/api/stock/:symbol", async (req, res) => {
         modules: ["summaryDetail", "defaultKeyStatistics", "financialData"],
       }),
       yahooFinance.historical(ticker, {
-        period1: "2013-01-01", // Start from 10 years ago
-        period2: today, // Ensure valid end date
-        interval: "1y",
+        period1, // Start from 10 years ago
+        period2, // Until today
+        interval: "1mo", // Use valid interval (1 month)
       }),
     ]);
 
