@@ -20,8 +20,25 @@ app.get("/api/stock/:symbol", async (req, res) => {
       yahooFinance.quoteSummary(ticker, {
         modules: ["summaryDetail", "defaultKeyStatistics", "financialData"],
       }),
-      yahooFinance.historical(ticker, { period1: "2023-01-01", interval: "1mo" }),
+      yahooFinance.historical(ticker, { period1: "2013-01-01", interval: "1y" }),
     ]);
+
+    // Compute 10-year average PE and PB ratios
+    let totalPE = 0, totalPB = 0, count = 0;
+    historical.forEach((entry) => {
+      if (entry.close && quoteSummary.defaultKeyStatistics.trailingEps) {
+        const pe = entry.close / quoteSummary.defaultKeyStatistics.trailingEps;
+        totalPE += pe;
+      }
+      if (entry.close && quoteSummary.summaryDetail.bookValue) {
+        const pb = entry.close / quoteSummary.summaryDetail.bookValue;
+        totalPB += pb;
+      }
+      count++;
+    });
+
+    const peTenYear = count > 0 ? (totalPE / count).toFixed(2) : "N/A";
+    const pbTenYear = count > 0 ? (totalPB / count).toFixed(2) : "N/A";
 
     res.json({
       companyName: quote.longName || quote.shortName || symbol,
@@ -35,6 +52,8 @@ app.get("/api/stock/:symbol", async (req, res) => {
       totalRevenue: quoteSummary.financialData?.totalRevenue || "N/A",
       netIncome: quoteSummary.financialData?.netIncome || "N/A",
       profitMargins: quoteSummary.financialData?.profitMargins || "N/A",
+      peTenYear,
+      pbTenYear,
       historicalData: historical || [],
     });
   } catch (error) {
