@@ -6,22 +6,28 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use(cors()); // Enable CORS
+app.use(cors());
 
-// Fetch complete stock data
 app.get("/api/stock/:symbol", async (req, res) => {
   try {
     let { symbol } = req.params;
     const ticker = `${symbol}.NS`; // For NSE stocks
 
     // Fetch all required data
-    const [quote, quoteSummary, historical] = await Promise.all([
+    const [quote, quoteSummary] = await Promise.all([
       yahooFinance.quote(ticker),
       yahooFinance.quoteSummary(ticker, {
         modules: ["summaryDetail", "defaultKeyStatistics", "financialData"],
       }),
-      yahooFinance.historical(ticker, { period1: "2013-01-01", interval: "1y" }),
     ]);
+
+    // Fix Historical Data Fetching
+    const period1 = new Date("2013-01-01").getTime() / 1000; // Convert to UNIX timestamp
+
+    const historical = await yahooFinance.historical(ticker, {
+      period1,
+      interval: "1mo", // Use 1-month interval
+    });
 
     let totalPE = 0, totalPB = 0, count = 0;
 
@@ -56,8 +62,8 @@ app.get("/api/stock/:symbol", async (req, res) => {
       totalRevenue: quoteSummary.financialData?.totalRevenue || "N/A",
       netIncome: quoteSummary.financialData?.netIncome || "N/A",
       profitMargins: quoteSummary.financialData?.profitMargins || "N/A",
-      peTenYear,  // Include in response
-      pbTenYear,  // Include in response
+      peTenYear,  
+      pbTenYear,  
     });
 
   } catch (error) {
