@@ -12,7 +12,10 @@ app.use(cors()); // Enable CORS
 app.get("/api/stock/:symbol", async (req, res) => {
   try {
     let { symbol } = req.params;
-    const ticker = `${symbol}.NS`; // For NSE stocks
+    const ticker = `${symbol}.NS`; // Ensure proper format for NSE stocks
+
+    // Get the current date in YYYY-MM-DD format
+    const today = new Date().toISOString().split("T")[0];
 
     // Fetch all required data
     const [quote, quoteSummary, historical] = await Promise.all([
@@ -21,8 +24,8 @@ app.get("/api/stock/:symbol", async (req, res) => {
         modules: ["summaryDetail", "defaultKeyStatistics", "financialData"],
       }),
       yahooFinance.historical(ticker, {
-        period1: "2013-01-01",
-        period2: new Date().toISOString().split("T")[0], // Ensure valid date range
+        period1: "2013-01-01", // Start from 10 years ago
+        period2: today, // Ensure valid end date
         interval: "1y",
       }),
     ]);
