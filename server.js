@@ -20,21 +20,32 @@ app.get("/api/stock/:symbol", async (req, res) => {
       yahooFinance.quoteSummary(ticker, {
         modules: ["summaryDetail", "defaultKeyStatistics", "financialData"],
       }),
-      yahooFinance.historical(ticker, { period1: "2013-01-01", interval: "1y" }),
+      yahooFinance.historical(ticker, {
+        period1: "2013-01-01",
+        period2: new Date().toISOString().split("T")[0], // Ensure valid date range
+        interval: "1y",
+      }),
     ]);
 
+    // Extract necessary data safely
+    const trailingEps = quoteSummary.defaultKeyStatistics?.trailingEps || null;
+    const bookValue = quoteSummary.summaryDetail?.bookValue || null;
+
     // Compute 10-year average PE and PB ratios
-    let totalPE = 0, totalPB = 0, count = 0;
+    let totalPE = 0,
+      totalPB = 0,
+      count = 0;
+
     historical.forEach((entry) => {
-      if (entry.close && quoteSummary.defaultKeyStatistics.trailingEps) {
-        const pe = entry.close / quoteSummary.defaultKeyStatistics.trailingEps;
-        totalPE += pe;
+      if (entry.close) {
+        if (trailingEps && trailingEps > 0) {
+          totalPE += entry.close / trailingEps;
+        }
+        if (bookValue && bookValue > 0) {
+          totalPB += entry.close / bookValue;
+        }
+        count++;
       }
-      if (entry.close && quoteSummary.summaryDetail.bookValue) {
-        const pb = entry.close / quoteSummary.summaryDetail.bookValue;
-        totalPB += pb;
-      }
-      count++;
     });
 
     const peTenYear = count > 0 ? (totalPE / count).toFixed(2) : "N/A";
