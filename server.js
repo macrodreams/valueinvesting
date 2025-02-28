@@ -68,6 +68,55 @@ app.get("/api/yahoo-stock/:symbol", async (req, res) => {
   }
 });
 
+app.get("/api/yahoo-fundamentals/:symbol", async (req, res) => {
+  try {
+    let { symbol } = req.params;
+    const ticker = `${symbol}.NS`; // NSE (India) stocks
+
+    // Fetch detailed fundamental stock data from Yahoo Finance
+    const stockData = await yahooFinance.quoteSummary(ticker, {
+      modules: [
+        "price",
+        "summaryDetail",
+        "defaultKeyStatistics",
+        "financialData",
+        "earnings",
+        "balanceSheetHistory",
+        "incomeStatementHistory",
+        "cashflowStatementHistory"
+      ],
+    });
+
+    // Structure the response to return only key fundamental data
+    const response = {
+      companyName: stockData.price?.longName || stockData.price?.shortName || symbol,
+      symbol: ticker,
+      marketPrice: stockData.price?.regularMarketPrice || "N/A",
+      currency: stockData.price?.currency || "N/A",
+      marketCap: stockData.summaryDetail?.marketCap || "N/A",
+      peRatio: stockData.defaultKeyStatistics?.trailingPE || "N/A",
+      pbRatio: stockData.defaultKeyStatistics?.priceToBook || "N/A",
+      dividendYield: stockData.summaryDetail?.dividendYield || "N/A",
+      totalRevenue: stockData.financialData?.totalRevenue || "N/A",
+      netIncome: stockData.financialData?.netIncome || "N/A",
+      profitMargins: stockData.financialData?.profitMargins || "N/A",
+      operatingMargins: stockData.financialData?.operatingMargins || "N/A",
+      earningsGrowth: stockData.financialData?.earningsGrowth || "N/A",
+      revenueGrowth: stockData.financialData?.revenueGrowth || "N/A",
+      debtToEquity: stockData.financialData?.debtToEquity || "N/A",
+      returnOnEquity: stockData.financialData?.returnOnEquity || "N/A",
+      balanceSheet: stockData.balanceSheetHistory?.balanceSheetStatements || [],
+      incomeStatement: stockData.incomeStatementHistory?.incomeStatementHistory || [],
+      cashFlowStatement: stockData.cashflowStatementHistory?.cashflowStatements || []
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("Error fetching stock data:", error);
+    res.status(500).json({ error: "Failed to fetch stock data" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
