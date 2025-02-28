@@ -14,26 +14,25 @@ app.get("/api/stock/:symbol", async (req, res) => {
     let { symbol } = req.params;
     const ticker = `${symbol}.NS`; // For NSE stocks
 
-    // Set correct date range for 10 years
+    // Compute valid historical date range (10 years ago to today)
     const today = new Date();
-    const tenYearsAgo = new Date(today);
+    const tenYearsAgo = new Date();
     tenYearsAgo.setFullYear(today.getFullYear() - 10);
 
-    // Convert dates to Yahoo Finance format
-    const period1 = tenYearsAgo.toISOString().split("T")[0]; // YYYY-MM-DD
-    const period2 = today.toISOString().split("T")[0]; // YYYY-MM-DD
+    const period1 = Math.floor(tenYearsAgo.getTime() / 1000); // Convert to UNIX timestamp
+    const period2 = Math.floor(today.getTime() / 1000); // Convert to UNIX timestamp
 
     // Fetch all required data
     const [quote, quoteSummary, historical] = await Promise.all([
       yahooFinance.quote(ticker),
       yahooFinance.quoteSummary(ticker, {
-        modules: ["summaryDetail", "defaultKeyStatistics", "financialData", "balanceSheetHistoryQuarterly"],
+        modules: ["summaryDetail", "defaultKeyStatistics", "financialData"],
       }),
-      yahooFinance.historical(ticker, { period1, period2, interval: "1y" }), // Fixed Date Range
+      yahooFinance.historical(ticker, { period1, period2, interval: "1y" }), // FIXED
     ]);
 
-    // Debugging log for full quote summary
-    console.log("Full Quote Summary:", JSON.stringify(quoteSummary, null, 2));
+    // Debugging: Log full quote summary
+    console.log("✅ Full Quote Summary:", JSON.stringify(quoteSummary, null, 2));
 
     // Extract values safely
     const eps = quoteSummary.defaultKeyStatistics?.trailingEps || null;
@@ -73,11 +72,11 @@ app.get("/api/stock/:symbol", async (req, res) => {
       historicalData: historical || [],
     });
   } catch (error) {
-    console.error("Error fetching stock data:", error);
+    console.error("❌ Error fetching stock data:", error);
     res.status(500).json({ error: `Failed to fetch stock data: ${error.message}` });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
