@@ -14,16 +14,25 @@ app.get("/api/stock/:symbol", async (req, res) => {
     let { symbol } = req.params;
     const ticker = `${symbol}.NS`; // For NSE stocks
 
+    // Set correct date range for 10 years
+    const today = new Date();
+    const tenYearsAgo = new Date(today);
+    tenYearsAgo.setFullYear(today.getFullYear() - 10);
+
+    // Convert dates to Yahoo Finance format
+    const period1 = tenYearsAgo.toISOString().split("T")[0]; // YYYY-MM-DD
+    const period2 = today.toISOString().split("T")[0]; // YYYY-MM-DD
+
     // Fetch all required data
     const [quote, quoteSummary, historical] = await Promise.all([
       yahooFinance.quote(ticker),
       yahooFinance.quoteSummary(ticker, {
         modules: ["summaryDetail", "defaultKeyStatistics", "financialData", "balanceSheetHistoryQuarterly"],
       }),
-      yahooFinance.historical(ticker, { period1: "2013-01-01", interval: "1y" }),
+      yahooFinance.historical(ticker, { period1, period2, interval: "1y" }), // Fixed Date Range
     ]);
 
-    // Log the full quote summary for debugging
+    // Debugging log for full quote summary
     console.log("Full Quote Summary:", JSON.stringify(quoteSummary, null, 2));
 
     // Extract values safely
@@ -65,7 +74,7 @@ app.get("/api/stock/:symbol", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching stock data:", error);
-    res.status(500).json({ error: "Failed to fetch stock data" });
+    res.status(500).json({ error: `Failed to fetch stock data: ${error.message}` });
   }
 });
 
